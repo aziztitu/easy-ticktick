@@ -30,136 +30,44 @@ async function getTabContentAsMarkdown(tab) {
 }
 
 export async function oneClickTickTick(tab, contextInfo) {
-    if (!await ticktickApi.authorized()) {
-        chrome.runtime.openOptionsPage();
-        return;
-    }
-
     const options = await storage.loadOptions();
 
-    var plainTitle = tab.title;
+    const plainTitle = tab.title;
+    const linkToPage = '[' + tab.title + '](' + tab.url + ')';
 
-    var taskData = {
-        title: '[' + tab.title + '](' + tab.url + ')'
+    const payload = {
+        title: plainTitle,
+        description: `Link: ${linkToPage}`,
+        tags: options.tags,
+        activeTabId: tab.id,
+        targetListId: options.targetListId,
+        priority: options.taskPriority,
     };
 
     if (contextInfo && contextInfo.selectionText) {
-        if (options.taskTitle == "selectedText") {
-            if (options.includePageContent) {
-                taskData.content = "# " + taskData.title;
-                taskData.content += "\n\n" + await getTabContentAsMarkdown(tab);
-            } else {
-                taskData.content = taskData.title;
-            }
-            taskData.title = '[' + contextInfo.selectionText + '](' + tab.url + ')';
-            plainTitle = contextInfo.selectionText;
-        } else {
-            taskData.content = contextInfo.selectionText;
-        }
-    } else if (options.includePageContent) {
-        taskData.content = await getTabContentAsMarkdown(tab);
+        payload.title = contextInfo.selectionText;
     }
 
     var dueDateNum = Number(options.dueDate);
-
     if (dueDateNum != -1) {
         var dueDate = new Date();
         dueDate.setHours(0, 0, 0, 0);
         // add one day of milliseconds times dueDate value (0 = today, 1 = tomorrow, etc.)
         dueDate.setTime(dueDate.getTime() + dueDateNum * 24 * 60 * 60 * 1000);
-        let dateStr = dueDate.toISOString();
-        dateStr = dateStr.replace('Z', '+0000')
-        taskData.dueDate = dateStr;
-        taskData.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        taskData.isAllDay = true;  // required to not show up as "at 00:00"
+        payload.dueDate = dueDate.toISOString();
     }
 
-    if (options.targetListId) {
-        taskData.projectId = options.targetListId;
-    }
-
-    if (options.taskPriority) {
-        taskData.priority = options.taskPriority;
-    }
-
-    if (options.tags) {
-        // example: "  tag1   tag2" -> "#tag1 #tag2"
-        let tags = options.tags
-            .split(" ")
-            .filter(tag => tag)  // remove empty tags (i.e. extra spaces)
-            .map(tag => '#' + tag.trim())
-            .join(" ");
-
-        if (taskData.content) {
-            taskData.content += "\n\n";
-        } else {
-            taskData.content = "";
-        }
-
-        taskData.content += "Tags: " + tags
-    }
-
-    const task = ticktickApi.task.create(taskData);
-    var notification = null;
-
-    if (options.showNotification) {
-        let newNotification = {
-            title: "TickTick Task Created",
-            message: 'Title: ' + plainTitle,
-            iconUrl: "/icons/icon256.png",
-            type: "basic",
-            buttons: [
-                { title: 'Show Task...' },
-                { title: 'Delete Task' }
-            ]
-        };
-
-        notification = createNotification(null, newNotification, task);
-    }
-
-    if (options.autoClose) {
-        chrome.tabs.remove(tab.id, function () { });
-    }
-
-    try {
-        var response = await task;
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                chrome.runtime.openOptionsPage();
-                return;
-            }
-            throw new Error("An error occured during task creation: " + response.status);
-        } else {
-            const data = await response.clone().json();
-            console.log("Success: ", data);
-        }
-    } catch (error) {
+    const result = await createTask(payload);
+    if (result !== true) {
+        const error = result;
         console.log(error);
 
-        let updatedContent = {
+        let errorContent = {
             title: "Failed to create task!",
             message: error.message,
             buttons: []
         };
-
-        if (notification) {
-            notification.then(notId => {
-                chrome.notifications.update(notId, updatedContent);
-            });
-        } else {
-            createNotification(null, updatedContent);
-        }
-
-        if (options.autoClose) {
-            // try to recover the tab, only try it on the last session that was closed
-            // otherwise it might restore an unrelated session
-            chrome.sessions.getRecentlyClosed({ maxResults: 1 }, function (sessions) {
-                if (sessions.length > 0 && sessions[0].tab && sessions[0].tab.index === tab.index) {
-                    chrome.sessions.restore(sessions[0].tab.sessionId);
-                }
-            });
-        }
+        createNotification(null, errorContent);
     }
 }
 
@@ -212,3 +120,103 @@ export function getSelectionInfo(info, tab, callback) {
         callback(selection);
     });
 };
+
+/**
+ * Payload format:
+ * {
+ *  title: string;
+ *  description: string;
+ *  targetListId?: string;
+ *  tags?: string;   // Comma separated
+ *  dueDate?: string;    // ISO format
+ *  priority?: string;
+ *  activeTabId?: number;
+ * }
+ */
+export async function createTask(payload) {
+    if (!await ticktickApi.authorized()) {
+        chrome.runtime.openOptionsPage();
+        return;
+    }
+
+    const options = await storage.loadOptions();
+
+    const taskData = {
+        title: payload.title,
+        content: payload.description,
+    };
+
+    if (payload.targetListId) {
+        taskData.projectId = payload.targetListId;
+    }
+
+    if (payload.priority) {
+        taskData.priority = payload.priority;
+    }
+
+    if (payload.dueDate) {
+        payload.dueDate = payload.dueDate.replace('Z', '+0000')
+        taskData.dueDate = payload.dueDate;
+        taskData.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        taskData.isAllDay = true;  // required to not show up as "at 00:00"
+    }
+
+    if (payload.tags) {
+        // example: "  tag1, tag2" -> "#tag1 #tag2"
+        let tags = payload.tags
+            .split(",")
+            .map(tag => tag.trim())
+            .filter(tag => tag)  // remove empty tags (i.e. extra spaces)
+            .map(tag => '#' + tag)
+            .join(" ");
+
+        if (taskData.content) {
+            taskData.content += "\n\n";
+        } else {
+            taskData.content = "";
+        }
+
+        taskData.content += "Tags: " + tags
+    }
+
+    try {
+        const task = ticktickApi.task.create(taskData);
+        var response = await task;
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.error('Unauthorized error');
+                chrome.runtime.openOptionsPage();
+                return 'Unauthorized';
+            }
+            console.error('Error during task creation: ', response.status);
+            return "An error occured during task creation: " + response.status;
+        } else {
+            const data = await response.clone().json();
+            console.log("Success: ", data);
+
+            if (options.showNotification) {
+                let newNotification = {
+                    title: "TickTick Task Created",
+                    message: 'Title: ' + payload.title,
+                    iconUrl: "/icons/icon256.png",
+                    type: "basic",
+                    buttons: [
+                        { title: 'Show Task...' },
+                        { title: 'Delete Task' }
+                    ]
+                };
+
+                createNotification(null, newNotification, task);
+            }
+
+            if (options.autoClose && payload.activeTabId) {
+                chrome.tabs.remove(payload.activeTabId, function () { });
+            }
+        }
+    } catch (error) {
+        console.error(error);
+        return error.message;
+    }
+
+    return true;
+}

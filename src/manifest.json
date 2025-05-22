@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "One-Click TickTick",
-  "description": "Instantly create a new TickTick task with a link to the current page in just one click!",
-  "version": "1.4.2",
+  "name": "Easy TickTick",
+  "description": "Easily create a new TickTick task with a link to the current page!",
+  "version": "1.4.3",
   "background": {
     "service_worker": "/service-worker.js",
     "type": "module"
@@ -13,7 +13,8 @@
       "24": "icons/icon24.png",
       "32": "icons/icon32.png"
     },
-    "default_title": "Create Task"
+    "default_title": "Create Task",
+    "default_popup": "popup.html"
   },
   "icons": {
     "16": "icons/icon16.png",
@@ -24,17 +25,22 @@
     "256": "icons/icon256.png"
   },
   "options_page": "options.html",
+  "side_panel": {
+    "default_path": "popup.html"
+  },
   "permissions": [
     "notifications",
     "contextMenus",
+    "tabs",
     "activeTab",
     "storage",
     "sessions",
     "identity",
-    "scripting"
+    "scripting",
+    "sidePanel"
   ],
   "host_permissions": [
-    "https://ticktick.com/oauth/token",
-    "https://api.ticktick.com/*"
-  ]
+    "*://*/*"
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyvsJHv9yiOlOZqqWgve7398+02MTk2ucV9tLyhyBPHSFPU9moqgTkneiZMQ+Pb/p+m7/isW01qVEsjcxMZC6zM50dRoOVo2YSZc2migYtiZc6D4KvTl8VSKStGTr+lqCW9rBEkyVbSbNdlAd5YJJYvmBNptKfFt7nWgItu7xlBwtXbmvvUcDqlly1N2ZY7nwjaGD/PYMAwtxmaH8w/amZ9GeLaYj9UzrAE8qBWTOPJrcb0Zjhr30F26iKYEoH2PA2uQrnkZkI5tK5pnFMur5caSpBXoqjVlWTGhD5FeVsGsLZiehLhcfz9L/9Uiu8LLyQoeaU2RVXEVMP6K0JBR42wIDAQAB"
 }

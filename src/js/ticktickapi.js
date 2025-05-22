@@ -1,8 +1,9 @@
 import {storage} from '/js/store.js';
+import {tickTickCreds} from '/creds.js';
 
 export const ticktickApi = {
-    clientId: 'TF8YKgsK67BA1htYrS',
-    clientSecret: '&U2rl3Ci1(hl(zS!DVC6Dt^$#&v2cO07',
+    clientId: tickTickCreds.clientId,
+    clientSecret: tickTickCreds.clientSecret,
     authorized: async function() {
         let token = (await storage.get('token')).token;
         return !!token;
@@ -32,6 +33,11 @@ export const ticktickApi = {
             return ticktickApi.rest('DELETE', `project/${projectId}/task/${taskId}`);
         }
     },
+    project: {
+        getAll: async function() {
+            return ticktickApi.rest('GET', 'project');
+        },
+    },
     logout: function() {
         return new Promise((resolve, reject) => {
             storage.remove('token').then(() => chrome.identity.clearAllCachedAuthTokens(() => { resolve() }));
@@ -41,16 +47,16 @@ export const ticktickApi = {
         var self = this;
         var redirectUri = chrome.identity.getRedirectURL();
         var scope = 'tasks:write';
-    
+
         var authURL = new URL('https://ticktick.com/oauth/authorize');
-        authURL.searchParams.append('client_id', self.clientId); 
-        authURL.searchParams.append('scope', scope); 
-        authURL.searchParams.append('state', ''); 
-        authURL.searchParams.append('redirect_uri', redirectUri); 
-        authURL.searchParams.append('response_type', 'code'); 
-    
+        authURL.searchParams.append('client_id', self.clientId);
+        authURL.searchParams.append('scope', scope);
+        authURL.searchParams.append('state', '');
+        authURL.searchParams.append('redirect_uri', redirectUri);
+        authURL.searchParams.append('response_type', 'code');
+
         console.log(authURL.href);
-        
+
         return new Promise((resolve, reject) => {
             chrome.identity.launchWebAuthFlow(
                 {
@@ -62,12 +68,12 @@ export const ticktickApi = {
                     var response = new URL(data);
                     var authCode = response.searchParams.get('code');
                     console.log("Auth Code: " + authCode);
-        
+
                     if (!authCode) {
                         // TODO: error handling
                         console.log("Auth failed");
                     }
-        
+
                     var tokenParams = {
                         client_id: self.clientId,
                         client_secret: self.clientSecret,
@@ -76,9 +82,9 @@ export const ticktickApi = {
                         scope: scope,
                         redirect_uri: redirectUri // effectively not used, but needs to be passed anyway
                     }
-        
+
                     console.log(tokenParams);
-        
+
                     fetch('https://ticktick.com/oauth/token', {
                             method: 'POST',
                             body: new URLSearchParams(tokenParams)

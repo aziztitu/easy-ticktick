@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Easy TickTick</title>
+    <link rel="stylesheet" href="/css/bulma.min.css" />
+    <link rel="stylesheet" href="/css/bulma-switch.min.css" />
+    <link rel="stylesheet" href="/css/fontawesome/css/all.min.css" />
+    <script src="/lib/jquery-3.2.1.min.js"></script>
+    <script src="/js/popup.js"></script>
+
+    <style>
+      input[type='date']::-webkit-calendar-picker-indicator {
+        color: rgba(0, 0, 0, 0);
+        opacity: 1;
+        display: block;
+        background-repeat: no-repeat;
+        width: 20px;
+        height: 20px;
+        border-width: thin;
+      }
+      input[type='date']::-webkit-calendar-picker-indicator {
+        position: absolute;
+        left: 6px;
+      }
+      input::-webkit-datetime-edit-fields-wrapper {
+        position: relative;
+        left: 10%;
+      }
+      input::-webkit-datetime-edit {
+        position: relative;
+        left: 10%;
+      }
+
+      body {
+        padding-bottom: 72px;
+      }
+
+      .sticky-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--bulma-primary);
+        opacity: 1;
+        padding: 12px;
+        z-index: 10;
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav class="navbar is-spaced is-light" role="navigation" aria-label="main navigation">
+      <div class="is-flex is-justify-content-space-between is-align-items-center">
+        <div class="navbar-brand">
+          <div class="navbar-item">
+            <img src="/icons/icon256.png" />
+          </div>
+          <div class="navbar-item">
+            <h1 class="title">Easy TickTick</h1>
+          </div>
+        </div>
+
+        <div>
+          <button class="button" id="optionsBtn">Options</button>
+        </div>
+      </div>
+    </nav>
+
+    <section id="formSection" class="section py-5" style="display: none">
+      <div class="container is-max-desktop">
+        <div class="columns">
+          <div class="column">
+            <div class="block">
+              <h4 class="title is-4">New Task</h4>
+
+              <!-- Title -->
+              <div class="field is-horizontal">
+                <div class="field-label is-normal">
+                  <label class="label">Title*</label>
+                </div>
+                <div class="field-body">
+                  <div class="field">
+                    <div class="control">
+                      <input id="taskTitle" class="input" type="text" placeholder="Title" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="field is-horizontal">
+                <div class="field-label is-normal">
+                  <label class="label">Description</label>
+                </div>
+                <div class="field-body">
+                  <div class="field">
+                    <div class="control">
+                      <textarea
+                        id="taskDescription"
+                        class="textarea"
+                        placeholder="Description"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Target List -->
+              <div class="field is-horizontal">
+                <div class="field-label is-normal">
+                  <label class="label">Target List ID</label>
+                </div>
+                <div class="field-body">
+                  <div class="field">
+                    <div class="control">
+                      <input
+                        id="targetList"
+                        class="input"
+                        type="text"
+                        placeholder="List ID (leave empty = Inbox)"
+                      />
+                    </div>
+                    <p class="help">Leave empty for the task to land in your TickTick Inbox.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Due Date -->
+              <div class="field is-horizontal">
+                <div class="field-label is-normal">
+                  <label class="label">Due Date</label>
+                </div>
+                <div class="field-body">
+                  <div class="field">
+                    <div class="control">
+                      <div class="select is-fullwidth">
+                        <select id="dueDate">
+                          <option value="-1">None</option>
+                          <option value="0">Today</option>
+                          <option value="1">Tomorrow</option>
+                          <option value="7">In 1 Week</option>
+                          <option value="30">In 1 Month</option>
+                          <option value="-2">Select Date</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Due Date Select -->
+              <div id="dueDateSelectField" class="field is-horizontal ml-6" style="display: none">
+                <!-- <div class="field-label is-normal">
+                  <label class="label">Due Date Select</label>
+                </div> -->
+                <div class="field-body">
+                  <div class="field">
+                    <div class="control">
+                      <input id="dueDateSelect" class="input has-icons-right" type="date" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tags -->
+              <div class="field is-horizontal">
+                <div class="field-label is-normal">
+                  <label class="label">Tags</label>
+                </div>
+                <div class="field-body">
+                  <div class="field">
+                    <div class="control">
+                      <input id="tagsList" class="input" type="text" placeholder="Tag1, Tag2" />
+                    </div>
+                    <p class="help">Comma-separated list of tags to be added to created task.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Priority -->
+              <div class="field is-horizontal">
+                <div class="field-label is-normal">
+                  <label class="label">Priority</label>
+                </div>
+                <div class="field-body">
+                  <div class="field">
+                    <div class="control">
+                      <div class="select is-fullwidth">
+                        <select id="taskPriority">
+                          <option value="0">None</option>
+                          <option value="1">Low</option>
+                          <option value="3">Medium</option>
+                          <option value="5">High</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="loggedOutSection" class="section py-5" style="display: none">
+      <div class="container is-max-desktop">
+        <div class="columns">
+          <div class="column">
+            <div class="block">You are not logged in!</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="footer" class="sticky-footer" style="display: none">
+      <div class="is-flex is-justify-content-space-between is-align-items-center">
+        <span id="statusMessage" class="has-text-white"></span>
+        <button id="createTaskBtn" class="button is-white right mt-0">Create Task</button>
+      </div>
+      <progress
+        id="taskProgress"
+        class="progress is-small mt-2"
+        max="100"
+        style="display: none"
+      ></progress>
+    </div>
+  </body>
+</html>
